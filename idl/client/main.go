@@ -10,6 +10,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
 )
 
 func timer(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
@@ -21,6 +22,12 @@ func timer(ctx context.Context, method string, req, reply any, cc *grpc.ClientCo
 
 func counter(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 	fmt.Printf("add once %s\n", method)
+	err := invoker(ctx, method, req, reply, cc, opts...)
+	return err
+}
+
+func devKey(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+	ctx = metadata.AppendToOutgoingContext(ctx, "dev_key", "123456")
 	err := invoker(ctx, method, req, reply, cc, opts...)
 	return err
 }
@@ -37,7 +44,7 @@ func main() {
 			grpc.MaxCallRecvMsgSize(1024), // Default SendMsg  limit is MaxInt32, Default RecvMsg limist is 4M, i adjust to 1KB
 		),
 		// grpc.WithUnaryInterceptor(timer),
-		grpc.WithChainUnaryInterceptor(timer, counter),
+		grpc.WithChainUnaryInterceptor(timer, counter, devKey),
 		grpc.WithTransportCredentials(creds),
 	)
 

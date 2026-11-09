@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	grpc_service "go-grpc/idl/service"
 	"net"
@@ -9,6 +10,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
 )
 
 func timer(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
@@ -24,6 +26,23 @@ func counter(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler g
 	return
 }
 
+func devKey(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+	meta, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, errors.New("Unable to get the dev_key")
+	}
+	if value, exists := meta["dev_key"]; !exists {
+		return nil, errors.New("Unable to get the dev_key")
+	} else {
+		if value[0] != "123456" {
+			return nil, errors.New("dev_key is incorrect")
+		} else {
+			resp, err = handler(ctx, req)
+			return
+		}
+	}
+}
+
 func main() {
 	lis, err := net.Listen("tcp", "127.0.0.1:5678")
 	if err != nil {
@@ -37,7 +56,7 @@ func main() {
 
 	server := grpc.NewServer(
 		// grpc.UnaryInterceptor(timer),
-		grpc.ChainUnaryInterceptor(timer, counter),
+		grpc.ChainUnaryInterceptor(timer, counter, devKey),
 		grpc.Creds(creds),
 	)
 	// Register Multiple Server
