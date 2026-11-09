@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package idl.service;
+
+option go_package = "idl/service;grpc_service";
+
+import "model/student.proto"; // Use --proto_path to specify the path (--proto_path can have many)
+
+// add properties won't cause issue, remove will cause issue
+message QueryStudentRequest{
+	int64 id = 1;
+	string name = 2;
+	int32 pageSize = 3;
+	int32 pageNumber = 4;
+}
+
+message QueryStudentResponse{
+	repeated idl.model.student Students = 1;
+}
+
+service student {
+	rpc QueryStudent(QueryStudentRequest) returns (QueryStudentResponse);
+}
+
+// protoc --go_out=. --proto_path=./idl/service --proto_path=./idl student_service.proto
+// --proto_path=./grpc/idl is to in order to find import "model/student.proto";
+
+// protoc --go_out=. --proto_path=./idl/service --proto_path=./idl student_service.proto --go_opt=Mmodel/student.proto=go-grpc/idl/model
+// --go_opt=M M indicate modify, change model/student.proto to go-grpc/idl/model
+
+// protoc --go_out=. --go-grpc_out=. --proto_path=./idl/service --proto_path=./idl student_service.proto --go_opt=Mmodel/student.proto=go-grpc/idl/model --go-grpc_opt=Mmodel/student.proto=go-grpc/idl/model
+// --go_grpc_out to generated grpc go code
+// --go_grpc_opt=M M indicate modify, change model/student.proto to go-grpc/idl/model
