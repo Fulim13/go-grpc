@@ -5,10 +5,24 @@ import (
 	"fmt"
 	grpc_service "go-grpc/idl/service"
 	"sync"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
+
+func timer(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+	begin := time.Now()
+	err := invoker(ctx, method, req, reply, cc, opts...)
+	fmt.Printf("Time Used %d ms\n", time.Since(begin).Milliseconds())
+	return err
+}
+
+func counter(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+	fmt.Printf("add once %s\n", method)
+	err := invoker(ctx, method, req, reply, cc, opts...)
+	return err
+}
 
 func main() {
 	conn, err := grpc.NewClient(
@@ -17,6 +31,8 @@ func main() {
 		grpc.WithDefaultCallOptions(
 			grpc.MaxCallRecvMsgSize(1024), // Default SendMsg  limit is MaxInt32, Default RecvMsg limist is 4M, i adjust to 1KB
 		),
+		// grpc.WithUnaryInterceptor(timer),
+		grpc.WithChainUnaryInterceptor(timer, counter),
 	)
 
 	if err != nil {
