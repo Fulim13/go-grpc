@@ -1,0 +1,28 @@
+syntax="proto3"; // protobuffer v3 version syntax
+
+// package name can contain . but cannot contain /
+// when other proto file need to reference this model, need to specify the package, no effect on the generated code
+package idl.model;
+
+// idl/model append with --go-out directory, and grpc_model are the go package name generated
+option go_package = "idl/model;grpc_model";
+// idl/model/grpc_model append with --go-out directory, and grpc_model are the go package name generated
+// option go_package = "idl/model;grpc_model";
+
+// when convert to go lang, it will turn to camelCase
+// student -> Student
+// stu_dent -> Stu_Dent
+message student {
+	int64 id = 1; // every properties number have to unique (1,2,3)
+	string name = 2; // when convert to go lang, it will turn to camelCase
+	map<string, float> scores = 3;
+	repeated string locations = 4; // list/slice
+	bool gender = 5;
+	int32 age = 6;
+	float score = 7; // equals to go float32, not support float64
+}
+
+// protoc --go_out=. --proto_path=./idl/model student.proto
+// --go_out specifies the output directory for the generated Go files; it is joined with the path in go_package
+// --proto_path specifies where to find the .proto files, and the .proto file argument can also include part of the path; the two are joined together. --proto_path can be given multiple times
+// The generated Go code imports google.golang.org/protobuf, so run go mod tidy to download the required modules
