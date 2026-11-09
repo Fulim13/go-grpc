@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 func timer(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
@@ -29,9 +30,15 @@ func main() {
 		panic(err)
 	}
 
+	creds, err := credentials.NewServerTLSFromFile("data/server.cert", "data/rsa_private_key.pem")
+	if err != nil {
+		panic(err)
+	}
+
 	server := grpc.NewServer(
 		// grpc.UnaryInterceptor(timer),
 		grpc.ChainUnaryInterceptor(timer, counter),
+		grpc.Creds(creds),
 	)
 	// Register Multiple Server
 	grpc_service.RegisterStudentServer(server, Student{})
@@ -42,3 +49,13 @@ func main() {
 }
 
 // go run ./idl/server
+// Generate a 1024-bit RSA private key:
+// openssl genrsa -out data/rsa_private_key.pem 1024
+//
+// Generate the public key from the private key:
+// openssl rsa -in data/rsa_private_key.pem -pubout -out data/rsa_public_key.pem
+//
+// PEM is a standard format that usually includes a header and a footer.
+//
+// Generate a self-signed certificate:
+// openssl req -x509 -new -nodes -key data/rsa_private_key.pem -subj "/CN=localhost" -addext "subjectAltName=DNS:localhost" -days 3650 -out data/server.cert

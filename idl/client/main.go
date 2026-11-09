@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 	grpc_service "go-grpc/idl/service"
+	"log"
 	"sync"
 	"time"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 )
 
 func timer(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
@@ -25,14 +26,19 @@ func counter(ctx context.Context, method string, req, reply any, cc *grpc.Client
 }
 
 func main() {
+	creds, err := credentials.NewClientTLSFromFile("data/server.cert", "")
+	if err != nil {
+		log.Fatalf("Failed to generated credentials %v", err)
+	}
 	conn, err := grpc.NewClient(
 		"localhost:5678",
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		// grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultCallOptions(
 			grpc.MaxCallRecvMsgSize(1024), // Default SendMsg  limit is MaxInt32, Default RecvMsg limist is 4M, i adjust to 1KB
 		),
 		// grpc.WithUnaryInterceptor(timer),
 		grpc.WithChainUnaryInterceptor(timer, counter),
+		grpc.WithTransportCredentials(creds),
 	)
 
 	if err != nil {
